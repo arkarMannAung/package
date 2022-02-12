@@ -1,21 +1,21 @@
-import 'package:json_annotation/json_annotation.dart';
+// import 'package:json_annotation/json_annotation.dart';
 part 'get_direction.g.dart';
 
-@JsonSerializable()
+// @JsonSerializable()
 class GetDirectionResponse {
   List<Feature> features;
   GetDirectionResponse(this.features);
   factory GetDirectionResponse.fromJson( Map<String,dynamic> json) => _$GetDirectionResponseFromJson(json);
 }
 
-@JsonSerializable()
+// @JsonSerializable()
 class Feature {
   Geometry geometry;
   Feature(this.geometry);
   factory Feature.fromJson( Map<String,dynamic> json ) => _$FeatureFromJson(json);
 }
 
-@JsonSerializable()
+// @JsonSerializable()
 class Geometry {
   List<List<double>> coordinates;
   Geometry(this.coordinates);
