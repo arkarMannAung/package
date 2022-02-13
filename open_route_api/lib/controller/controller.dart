@@ -49,7 +49,6 @@ class OpenRoute {
     .then((value){
       Map<String,dynamic> json = jsonDecode(value);
       GetDirectionResponse getDirectionResponse = GetDirectionResponse.fromJson(json);
-      log.d(getDirectionResponse.features[0].geometry.coordinates[0]);
       polyList = List<LatLng>.generate(
         getDirectionResponse.features[0].geometry.coordinates.length,
         (index) => LatLng(getDirectionResponse.features[0].geometry.coordinates[index][1],getDirectionResponse.features[0].geometry.coordinates[index][0])
