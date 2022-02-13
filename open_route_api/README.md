@@ -10,6 +10,8 @@
 ##### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;git:
 ##### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;url: https://github.com/arkarMannAung/package.git
 ##### &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;path: open_route_api
+##### &nbsp;
+##### import 'package:open_route_api/open_route_api.dart';
 
 
 
