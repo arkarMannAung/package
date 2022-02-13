@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:open_route_api/model/get_direction.dart';
+import 'package:open_route_api/model/post_direction.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'api_service.g.dart';
@@ -9,11 +10,16 @@ abstract class ApiService {
   factory ApiService(Dio dio, {String baseUrl}) = _ApiService;
 
   @GET('directions/{profile}')
-  // Future<GetDirectionResponse> getDirecction(
   Future<String> getDirection(
     @Path('profile') String profile,
     @Query('api_key') String apiKey,
     @Query('start') String start,
     @Query('end') String end,
+  );
+  @POST('directions/{profile}')
+  Future<String> postDirection(
+    @Header('Authorization') String apiKey,
+    @Path('profile') String profile,
+    @Body() PostDirection postDirection,
   );
 }
