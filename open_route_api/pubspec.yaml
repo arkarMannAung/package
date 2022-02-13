@@ -1,6 +1,6 @@
 name: open_route_api
-description: Network Service for
-version: 0.0.1
+description: Network Service for open route service
+version: 0.0.2
 homepage:
 
 environment:

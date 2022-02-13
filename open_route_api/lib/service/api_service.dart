@@ -22,4 +22,10 @@ abstract class ApiService {
     @Path('profile') String profile,
     @Body() PostDirection postDirection,
   );
+  @POST('directions/{profile}/geojson')
+  Future<String> postDirectionGeo(
+    @Header('Authorization') String apiKey,
+    @Path('profile') String profile,
+    @Body() PostDirection postDirection,
+  );
 }
