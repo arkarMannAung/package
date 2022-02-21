@@ -86,7 +86,7 @@ class Home extends StatelessWidget {
       ],),
       floatingActionButton: FloatingActionButton(
         onPressed: (){
-          String profile = 'driving-car';
+          String profile = 'foot-walking'; // 'driving-car';
           String apiKey = '5b3ce3597851110001cf62482bcc530e03734e74af9f467ae3294ab9';
           // LatLng start = LatLng( _ctrl.startLat.value, _ctrl.startLng.value);
           // LatLng end = LatLng( _ctrl.endLat.value, _ctrl.endLng.value);
@@ -118,30 +118,42 @@ class Home extends StatelessWidget {
           // destinations=dest;
           // // develop state
 
-
-          OpenRoute.sortRoute(
-            apiKey: apiKey,
-            profile: profile,
-            home: LatLng(_ctrl.startLat.value, _ctrl.startLng.value),
-            destinations: _ctrl.points.value
-          )
-          .then((value){
-            List<LatLng> polyDatas= <LatLng>[];
-            polyDatas.add(LatLng(_ctrl.startLat.value, _ctrl.startLng.value));
-            polyDatas.addAll(List<LatLng>.generate(value.length, (i) => value[i].coordinate));
-            OpenRoute.directionGeoJson(profile: profile, apiKey: apiKey, 
-              coordinates: polyDatas
-            ).then((value){
-              setPolyLines(value);
-            }).onError((error, stackTrace){
-              log.e(error);
-            });
-            
-            
-            for (var element in value) {
-              log.e('dis: ${element.distance} long:${element.coordinate.longitude}');
-            }
+          OpenRoute.getDirection(profile: profile, apiKey: apiKey, 
+            start: LatLng(_ctrl.startLat.value, _ctrl.startLng.value),
+            end: LatLng(_ctrl.endLat.value, _ctrl.endLng.value)
+          ).then((value){
+            setPolyLines(value);
           });
+
+          // OpenRoute.sortRoute(
+          //   apiKey: apiKey,
+          //   profile: profile,
+          //   home: LatLng(_ctrl.startLat.value, _ctrl.startLng.value),
+          //   destinations: _ctrl.points.value
+          // )
+          // .then((value){
+          //   List<LatLng> polyDatas= <LatLng>[];
+          //   polyDatas.add(LatLng(_ctrl.startLat.value, _ctrl.startLng.value));
+          //   polyDatas.addAll(List<LatLng>.generate(value.length, (i) => value[i].coordinate));
+          //   // redraw maker
+          //   _ctrl.markers.clear();
+          //   for(int a=0;a<polyDatas.length;a++){
+          //     setMarkers(position: polyDatas[a],id: a==0?'start':'point $a');
+          //   }
+          //   // redraw maker
+          //   OpenRoute.directionGeoJson(profile: profile, apiKey: apiKey, 
+          //     coordinates: polyDatas
+          //   ).then((value){
+          //     setPolyLines(value);
+          //   }).onError((error, stackTrace){
+          //     log.e(error);
+          //   });
+            
+            
+          //   for (var element in value) {
+          //     log.e('dis: ${element.distance} long:${element.coordinate.longitude}');
+          //   }
+          // });
         },
         child: const Icon(Icons.search),
       ),
