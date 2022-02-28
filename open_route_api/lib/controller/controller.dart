@@ -102,7 +102,7 @@ class OpenRoute {
 ////////////////////////////////////////////////////////////////////////////
 // find nearest route method
 ////////////////////////////////////////////////////////////////////////////
-  static Future<List<PointInfo>> sortRoute({
+  static Future<List<LatLng>> sortRoute({
     required String apiKey,
     required String profile,
     required LatLng home,
@@ -149,7 +149,15 @@ class OpenRoute {
     }
     allPoint.sort((a, b) => a.distance.compareTo(b.distance));
     log.i('end at ${DateTime.now().hour}:${DateTime.now().second}');
-    return allPoint;
+    List<LatLng> response = [];
+    response.add(home);
+    response.addAll(
+      List<LatLng>.generate(
+        allPoint.length, 
+        (i) => allPoint[i].coordinate
+      )
+    );
+    return response;
   }
 }
 
