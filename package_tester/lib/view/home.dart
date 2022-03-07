@@ -1,20 +1,43 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:open_route_api/open_route_api.dart';
+import 'package:location/location.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:get/get.dart';
 import 'package:dio/dio.dart';
 // ignore_for_file: invalid_use_of_protected_member
 // ignore: must_be_immutable
-class Home extends StatelessWidget {
+class Home extends StatefulWidget {
   Home({ Key? key }) : super(key: key);
+
+  @override
+  State<Home> createState() => _HomeState();
+}
+
+class _HomeState extends State<Home> {
   final _ctrl = Get.put(Controller());
+
   late GoogleMapController mapController;
-  LatLng home = const LatLng(16.807861, 96.129943);
+
+  final Location location = Location();
+
+  // LatLng home = const LatLng(16.807861, 96.129943);
+  LatLng home = const LatLng(16.773110, 96.159449);
+  late LatLng myLocation;
+ //testing
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
     setMarkers(position: home);
+    // location.onLocationChanged.listen((l) { 
+    //   log.e( ' ${l.latitude} ${l.longitude}');
+    //   mapController.animateCamera(
+    //     CameraUpdate.newCameraPosition(
+    //       CameraPosition(target: LatLng(l.latitude as double, l.longitude as double),zoom: 15),
+    //     ),
+    //   );
+    // });
   }
+  
   setMarkers({required LatLng position,String id="Home"}) {
     _ctrl.markers.add(
       Marker(
@@ -27,6 +50,7 @@ class Home extends StatelessWidget {
       ),
     );
   }
+
   setPolyLines(List<LatLng> polyPoints) {
     Polyline polyline = Polyline(
       polylineId: const PolylineId("polyline"),
@@ -38,6 +62,56 @@ class Home extends StatelessWidget {
     temp.add(polyline);
     _ctrl.polyLines(temp);
   }
+    
+  void getLocation () async{
+    bool _serviceEnabled;
+    PermissionStatus _permissionGranted;
+    LocationData _locationData;
+     _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return;
+      }
+    }
+    
+    _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+      if (_permissionGranted != PermissionStatus.granted) {
+        return;
+      }
+    }
+
+    _locationData = await location.getLocation();
+    myLocation = LatLng(_locationData.latitude as double, _locationData.longitude as double);
+      setMarkers(position: myLocation);
+      mapController.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: LatLng(_locationData.latitude as double, _locationData.longitude as double),zoom: 15),
+        ),
+      );
+      log.e( ' ${_locationData.latitude} ${_locationData.longitude}');
+  }
+
+  @override
+  void initState() {
+    myLocation = home;
+    location.enableBackgroundMode(enable: true);
+    getLocation();
+    // location.onLocationChanged.listen((LocationData currentLocation) {
+    //   myLocation = LatLng(currentLocation.latitude as double, currentLocation.longitude as double);
+    //   setMarkers(position: myLocation);
+    //   mapController.animateCamera(
+    //     CameraUpdate.newCameraPosition(
+    //       CameraPosition(target: LatLng(currentLocation.latitude as double, currentLocation.longitude as double),zoom: 15),
+    //     ),
+    //   );
+    //   log.e( ' ${currentLocation.latitude} ${currentLocation.longitude}');
+    // });
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,6 +160,7 @@ class Home extends StatelessWidget {
       ],),
       floatingActionButton: FloatingActionButton(
         onPressed: (){
+
           String profile = 'driving-car'; // 'driving-car'; foot-walking
           String apiKey = '5b3ce3597851110001cf62482bcc530e03734e74af9f467ae3294ab9';
           // LatLng start = LatLng( _ctrl.startLat.value, _ctrl.startLng.value);
@@ -127,13 +202,45 @@ class Home extends StatelessWidget {
           //   log.e((error as DioError).response);
           // });
 
-          OpenRoute.sortRoute(
-            apiKey: apiKey,
-            profile: profile,
-            home: LatLng(_ctrl.startLat.value, _ctrl.startLng.value),
-            destinations: _ctrl.points.value
-          )
-          .then((value){
+          // sort route testing
+
+          // OpenRoute.sortRoute(
+          //   apiKey: apiKey,
+          //   profile: profile,
+          //   home: LatLng(_ctrl.startLat.value, _ctrl.startLng.value),
+          //   destinations: _ctrl.points.value
+          // )
+          // .then((value){
+            // // redraw maker
+            // _ctrl.markers.clear();
+            // for(int a=0;a<value.length;a++){
+            //   setMarkers(position: value[a],id: a==0?'start':'point $a');
+            // }
+            // // redraw maker
+            // OpenRoute.directionGeoJson(profile: profile, apiKey: apiKey, 
+            //   coordinates: value
+            // ).then((value){
+            //   setPolyLines(value);
+            // }).onError((error, stackTrace){
+            //   log.e(error);
+            // });
+          // });
+
+          // generate RxList to List
+          List<GroupRoute> groupRoutes = List<GroupRoute>.generate(
+            _ctrl.groupRoutes.length,
+            (i) => GroupRoute(
+              primary: _ctrl.groupRoutes.value[i].primary,
+              secondary: _ctrl.groupRoutes.value[i].secondary
+            )
+          );
+
+          OpenRoute.groupRoute(
+            apiKey: apiKey, 
+            profile: profile, 
+            myLocation: myLocation, 
+            groupRoutes: groupRoutes,
+          ).then((value){
             // redraw maker
             _ctrl.markers.clear();
             for(int a=0;a<value.length;a++){
@@ -147,7 +254,9 @@ class Home extends StatelessWidget {
             }).onError((error, stackTrace){
               log.e(error);
             });
+            log.e(value.length);
           });
+
         },
         child: const Icon(Icons.search),
       ),
@@ -243,12 +352,40 @@ class Home extends StatelessWidget {
           )
         ),
         Expanded(
-          flex: 6,
+          flex: 4,
           child: Container(
             height: 40.0,
             color: Colors.white,
             alignment: Alignment.center,
-            child: Text('point: ${_ctrl.points.value.length}'),
+            child: Text('point: ${_ctrl.points.value.length} | gp: ${_ctrl.groupRoutes.length}'),
+          )
+        ),
+        Expanded(
+          flex: 2,
+          child: SizedBox(
+            height: 40.0,
+            child: ElevatedButton(
+              onPressed: (){
+                if(_ctrl.startLat.value !=0.0 &&_ctrl.startLng.value!=0.0 && _ctrl.points.length>0){
+                  GroupRoute groupRoute = GroupRoute(
+                    primary: LatLng(_ctrl.startLat.value,_ctrl.startLng.value),
+                    secondary: _ctrl.points
+                  );
+                  _ctrl.groupRoutes.add(groupRoute);
+
+                  // _ctrl.startLat(0.0);_ctrl.startLng(0.0);_ctrl.endLat(0.0);_ctrl.endLng(0.0);
+                  // _ctrl.points(<LatLng>[]);
+                  // _ctrl.polyLines.clear();
+                  // _ctrl.markers.clear();
+                }else{
+                  log.e('error');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                primary: Colors.pink
+              ),
+              child: const Icon(Icons.add),
+            ),
           )
         ),
         Expanded(
@@ -259,6 +396,7 @@ class Home extends StatelessWidget {
               onPressed: (){
                 _ctrl.startLat(0.0);_ctrl.startLng(0.0);_ctrl.endLat(0.0);_ctrl.endLng(0.0);
                 _ctrl.points(<LatLng>[]);
+                _ctrl.groupRoutes.clear();
                 _ctrl.polyLines.clear();
                 _ctrl.markers.clear();
               },
@@ -282,6 +420,11 @@ class Controller extends GetxController{
   RxDouble endLat = 0.0.obs;
   RxDouble endLng = 0.0.obs;
   RxList<LatLng> points = <LatLng>[].obs;
+
+  // Group route
+  RxList<GroupRoute> groupRoutes= <GroupRoute>[].obs;
+  // Group route
+
 
   List test = [
     {
@@ -327,4 +470,13 @@ class Controller extends GetxController{
   ];
 }
 
+// class GroupRoute extends GetxController{
+//   LatLng primary;
+//   List<LatLng> secondary;
+//   GroupRoute({required this.primary,required this.secondary});
+// }
 
+
+// note
+
+// https://levelup.gitconnected.com/how-to-add-google-maps-in-a-flutter-app-and-get-the-current-location-of-the-user-dynamically-2172f0be53f6

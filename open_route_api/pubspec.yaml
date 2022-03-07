@@ -13,6 +13,7 @@ dependencies:
   retrofit: '>=3.0.0 <4.0.0'
   logger: any
   google_maps_flutter: ^2.1.1
+  location: ^4.3.0
 
 dev_dependencies:
   flutter_test:

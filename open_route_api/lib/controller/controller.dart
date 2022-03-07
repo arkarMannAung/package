@@ -159,6 +159,123 @@ class OpenRoute {
     );
     return response;
   }
+
+////////////////////////////////////////////////////////////////////////////
+// find nearest route method
+////////////////////////////////////////////////////////////////////////////
+  static Future<List<LatLng>> groupRoute({
+    required String apiKey,
+    required String profile,
+    required LatLng myLocation,
+    required List<GroupRoute> groupRoutes,
+  })async{
+    List<GroupRouteInfo> groupRouteInfo = List<GroupRouteInfo>.generate(
+      groupRoutes.length, 
+      (x) => GroupRouteInfo(
+        primary: PointInfo(
+          coordinate: LatLng(groupRoutes[x].primary.latitude,groupRoutes[x].primary.longitude),
+          apiSuccess: false,
+          distance: 0.0,
+          duration: 0.0
+        ),
+        secondary: List<PointInfo>.generate(
+          groupRoutes[x].secondary.length,
+          (y) => PointInfo(
+            coordinate: LatLng(groupRoutes[x].secondary[y].latitude,groupRoutes[x].secondary[y].longitude),
+            apiSuccess: false,
+            distance: 0.0, 
+            duration: 0.0
+          ),
+        )
+      )
+    );
+
+    // get information
+    for(int x=0;x<groupRouteInfo.length;x++){      
+      await directionToRoutes(
+        apiKey: apiKey,
+        profile: profile,
+        coordinates: [myLocation, groupRouteInfo[x].primary.coordinate]
+      ).then((value){
+        groupRouteInfo[x].primary.apiSuccess=true;
+        groupRouteInfo[x].primary.distance = value[0].summary.distance;
+        groupRouteInfo[x].primary.duration = value[0].summary.duration;
+      });
+      // nested loop for secondary
+      for(int y=0;y<groupRouteInfo[x].secondary.length;y++){
+        await directionToRoutes(
+          apiKey: apiKey,
+          profile: profile,
+          coordinates: [myLocation, groupRouteInfo[x].secondary[y].coordinate]
+        ).then((value){
+          groupRouteInfo[x].secondary[y].apiSuccess=true;
+          groupRouteInfo[x].secondary[y].distance = value[0].summary.distance;
+          groupRouteInfo[x].secondary[y].duration = value[0].summary.duration;
+        });
+      }
+      // nested loop for secondary
+    }
+
+    // double check
+    for(int x=0;x<groupRouteInfo.length;x++){
+      if(groupRouteInfo[x].primary.apiSuccess==false){
+        await directionToRoutes(
+          apiKey: apiKey,
+          profile: profile,
+          coordinates: [myLocation, groupRouteInfo[x].primary.coordinate]
+        ).then((value){
+          groupRouteInfo[x].primary.apiSuccess=true;
+          groupRouteInfo[x].primary.distance = value[0].summary.distance;
+          groupRouteInfo[x].primary.duration = value[0].summary.duration;
+        });
+      }
+      // nested loop for secondary
+      for(int y=0;y<groupRouteInfo[x].secondary.length;y++){
+        if(groupRouteInfo[x].secondary[y].apiSuccess==false){
+          await directionToRoutes(
+            apiKey: apiKey,
+            profile: profile,
+            coordinates: [myLocation, groupRouteInfo[x].secondary[y].coordinate]
+          ).then((value){
+            groupRouteInfo[x].secondary[y].apiSuccess=true;
+            groupRouteInfo[x].secondary[y].distance = value[0].summary.distance;
+            groupRouteInfo[x].secondary[y].duration = value[0].summary.duration;
+          });
+        }
+      }
+      // nested loop for secondary
+    }
+    // double check
+
+    List tmp = groupRouteInfo.where((e) => e.primary.apiSuccess==false).toList();
+    if(tmp.isNotEmpty){
+      throw Exception('Unknown Error');
+    }
+    // check
+    groupRouteInfo.sort((a, b) => a.primary.distance.compareTo(b.primary.distance));
+    log.i('end at ${DateTime.now().hour}:${DateTime.now().second}');
+    
+    // processing for logical sorting
+    List<LatLng> response = [];
+    response.add(myLocation);
+    // add primary first
+      response.add(groupRouteInfo[0].primary.coordinate);
+    for(int a=0;a<groupRouteInfo.length;a++){
+      List<PointInfo> minorPointInfo = groupRouteInfo[a].secondary;
+      if(a!=groupRouteInfo.length-1){
+        minorPointInfo.add(groupRouteInfo[a+1].primary);
+      }
+      // sorting
+      minorPointInfo.sort((a, b) => a.distance.compareTo(b.distance));
+      List<LatLng> temp = List<LatLng>.generate(
+        minorPointInfo.length, (index) => minorPointInfo[index].coordinate
+      );
+      response.addAll(temp);
+    }
+    // processing for logical sorting
+    return response;
+  }
+
 }
 
 class PointInfo {
@@ -167,4 +284,16 @@ class PointInfo {
   double distance;
   double duration;
   PointInfo({required this.coordinate,required this.apiSuccess, required this.distance, required this.duration});
+}
+
+class GroupRoute {
+  LatLng primary;
+  List<LatLng> secondary;
+  GroupRoute({required this.primary,required this.secondary});
+}
+
+class GroupRouteInfo{
+  PointInfo primary;
+  List<PointInfo> secondary;
+  GroupRouteInfo({required this.primary,required this.secondary});
 }
